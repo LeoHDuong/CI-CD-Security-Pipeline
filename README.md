@@ -59,6 +59,14 @@ dotnet run
 ### Database
 The PostgreSQL database runs in a Docker container and persists data using named volumes.
 
+### Database Migrations
+
+To add a new migration after changing your C# Models:
+1. Ensure you have the `dotnet-ef` tool installed locally.
+2. Run from `backend/MyApp.Api`:
+   ```bash
+   dotnet ef migrations add <MigrationName>
+
 ## 📁 Project Structure
 
 ```
@@ -84,9 +92,10 @@ Copy `.env.example` to `.env` and configure:
 
 ## 🐳 Docker Services
 
-- **backend**: ASP.NET Core API (port 5105)
-- **frontend**: React SPA served by Nginx (port 5173)
-- **db**: PostgreSQL database (port 5432)
+- **migration**: Short-lived container that applies EF Core migrations to the DB.
+- **backend**: ASP.NET Core API (port 5105).
+- **frontend**: React SPA served by Nginx (port 5173).
+- **db**: PostgreSQL database (port 5432).
 
 ## 🤝 Contributing
 

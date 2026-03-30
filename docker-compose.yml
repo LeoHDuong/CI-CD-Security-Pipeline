@@ -1,25 +1,6 @@
 version: "3.9"
 
 services:
-  backend:
-    build: ./backend/MyApp.Api
-    container_name: myapp_backend
-    ports:
-      - "5105:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=myapp;Username=postgres;Password=postgres
-    depends_on:
-      - db
-
-  frontend:
-    build: ./frontend
-    container_name: myapp_frontend
-    ports:
-      - "5173:80"
-    depends_on:
-      - backend
-
   db:
     image: postgres:15
     container_name: myapp_db
@@ -32,6 +13,45 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d myapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migration:
+    build: 
+      context: ./backend/MyApp.Api
+    container_name: myapp_migration
+    # Runs the bundle created in the Dockerfile
+    entrypoint: ./migrate
+    command: --connection "Host=db;Port=5432;Database=myapp;Username=postgres;Password=postgres"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build: 
+      context: ./backend/MyApp.Api
+    container_name: myapp_backend
+    ports:
+      - "5105:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=myapp;Username=postgres;Password=postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+
+  frontend:
+    build: ./frontend
+    container_name: myapp_frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
