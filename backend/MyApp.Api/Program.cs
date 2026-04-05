@@ -49,3 +49,5 @@ app.MapDelete("/users/{id}", async (Guid id, UserService service) =>
 
 
 app.Run();
+
+public partial class Program { }
