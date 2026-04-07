@@ -16,7 +16,7 @@ stages:
       - job: GitLeaks
         displayName: GitLeaks Scan
         pool:
-          vmImage: local-agent
+          name: local-agent
         steps:
           - checkout: self
             fetchDepth: 0        # full history scan
@@ -34,7 +34,7 @@ stages:
       - job: TruffleHog
         displayName: TruffleHog Scan
         pool:
-          vmImage: local-agent
+          name: local-agent
         steps:
           - checkout: self
             fetchDepth: 0
