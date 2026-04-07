@@ -16,7 +16,7 @@ stages:
       - job: GitLeaks
         displayName: GitLeaks Scan
         pool:
-          vmImage: ubuntu-latest
+          vmImage: local-agent
         steps:
           - checkout: self
             fetchDepth: 0        # full history scan
