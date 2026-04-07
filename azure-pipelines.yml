@@ -34,7 +34,7 @@ stages:
       - job: TruffleHog
         displayName: TruffleHog Scan
         pool:
-          vmImage: ubuntu-latest
+          vmImage: local-agent
         steps:
           - checkout: self
             fetchDepth: 0
