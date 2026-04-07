@@ -1,0 +1,47 @@
+trigger:
+  branches:
+    include:
+      - main
+      - feature/*
+
+pr:
+  branches:
+    include:
+      - main
+
+stages:
+  - stage: SecretScanning
+    displayName: Secret Scanning
+    jobs:
+      - job: GitLeaks
+        displayName: GitLeaks Scan
+        pool:
+          name: local-agent
+        steps:
+          - checkout: self
+            fetchDepth: 0        # full history scan
+
+          - script: |
+              docker run --rm -v $(pwd):/repo \
+                zricethezav/gitleaks:latest \
+                detect --source /repo \
+                       --config /repo/.gitleaks.toml \
+                       --verbose \
+                       --exit-code 1
+            displayName: Run GitLeaks
+            # exit-code 1 = pipeline fails if secrets found → blocks merge
+
+      - job: TruffleHog
+        displayName: TruffleHog Scan
+        pool:
+          name: local-agent
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          - script: |
+              docker run --rm -v $(pwd):/repo \
+                trufflesecurity/trufflehog:latest \
+                git file:///repo --only-verified --fail
+            displayName: Run TruffleHog
+            # --fail = non-zero exit if secrets found
