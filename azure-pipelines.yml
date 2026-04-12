@@ -45,3 +45,75 @@ stages:
                 git file:///repo --only-verified --fail
             displayName: Run TruffleHog
             # --fail = non-zero exit if secrets found
+
+  - stage: SAST
+    displayName: SAST Scan
+    dependsOn: SecretScanning
+    jobs:
+      - job: SASTFrontend
+        displayName: Semgrep – Frontend (TypeScript)
+        pool:
+          name: local-agent
+        steps:
+          - checkout: self
+
+          - script: |
+              docker run --rm -v $(pwd):/src \
+                semgrep/semgrep:latest \
+                semgrep scan \
+                  --config=p/typescript \
+                  --config=p/javascript \
+                  --config=p/react \
+                  --error \
+                  --json-output=/src/semgrep-frontend.json \
+                  /src/frontend || true
+              docker run --rm -v $(pwd):/src \
+                semgrep/semgrep:latest \
+                semgrep scan \
+                  --config=p/typescript \
+                  --config=p/javascript \
+                  --config=p/react \
+                  --error \
+                  /src/frontend
+            displayName: Run Semgrep on Frontend
+            # --error = non-zero exit if any findings → blocks merge
+
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Frontend SAST Report
+            condition: always()
+            inputs:
+              pathToPublish: semgrep-frontend.json
+              artifactName: sast-frontend-report
+
+      - job: SASTBackend
+        displayName: Semgrep – Backend (C#)
+        pool:
+          name: local-agent
+        steps:
+          - checkout: self
+
+          - script: |
+              docker run --rm -v $(pwd):/src \
+                semgrep/semgrep:latest \
+                semgrep scan \
+                  --config=p/csharp \
+                  --config=p/owasp-top-ten \
+                  --error \
+                  --json-output=/src/semgrep-backend.json \
+                  /src/backend || true
+              docker run --rm -v $(pwd):/src \
+                semgrep/semgrep:latest \
+                semgrep scan \
+                  --config=p/csharp \
+                  --config=p/owasp-top-ten \
+                  --error \
+                  /src/backend
+            displayName: Run Semgrep on Backend
+            # --error = non-zero exit if any findings → blocks merge
+
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Backend SAST Report
+            condition: always()
+            inputs:
+              pathToPublish: semgrep-backend.json
+              artifactName: sast-backend-report
