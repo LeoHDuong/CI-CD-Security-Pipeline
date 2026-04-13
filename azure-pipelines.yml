@@ -117,3 +117,42 @@ stages:
             inputs:
               pathToPublish: semgrep-backend.json
               artifactName: sast-backend-report
+
+  - stage: BuildAndTest
+    displayName: Build and Test
+    dependsOn: SAST
+    jobs:
+      - job: BackendBuildTest
+        displayName: Backend Build and Test
+        pool:
+          name: local-agent
+        steps:
+          - checkout: self
+
+          - script: dotnet restore ./backend/MyApp.Api/MyApp.Api.csproj
+            displayName: Restore dependencies
+
+          - script: dotnet build ./backend/MyApp.Api/MyApp.Api.csproj
+            displayName: Build backend
+
+          - script: dotnet test ./backend/MyApp.Api/Tests/Tests.csproj
+            displayName: Run tests
+
+  - stage: DependencyScanning
+    displayName: Dependency Scanning
+    dependsOn: BuildAndTest
+    jobs:
+      - job: Trivy
+        displayName: Trivy Dependency Scan
+        pool:
+          name: local-agent
+        steps:
+          - checkout: self
+
+          - script: |
+              docker run --rm -v $(pwd):/repo \
+                aquasec/trivy:latest \
+                fs /repo \
+                --exit-code 1 \
+                --severity HIGH,CRITICAL
+            displayName: Run Trivy
