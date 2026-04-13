@@ -151,7 +151,7 @@ stages:
 
           - script: |
               docker run --rm -v $(pwd):/repo \
-                aquasec/trivy:latest \
+                aquasec/trivy \
                 fs /repo \
                 --exit-code 1 \
                 --severity HIGH,CRITICAL
