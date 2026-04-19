@@ -1,3 +1,6 @@
+variables:
+  - group: acr-credentials
+
 trigger:
   branches:
     include:
@@ -156,3 +159,33 @@ stages:
                 --exit-code 1 \
                 --severity HIGH,CRITICAL
             displayName: Run Trivy
+
+  - stage: ContainerBuild
+    displayName: Build and Push Container
+    dependsOn: DependencyScanning
+    jobs:
+      - job: DockerBuildPush
+        displayName: Build and Push to ACR
+        pool:
+          name: local-agent
+        steps:
+          - checkout: self
+
+          - script: |
+              docker login $(ACR_LOGIN_SERVER) \
+                --username $(ACR_USERNAME) \
+                --password $(ACR_PASSWORD)
+            displayName: Login to ACR
+
+          - script: |
+              docker build \
+                -t $(ACR_LOGIN_SERVER)/myapp-api:$(Build.BuildId) \
+                -t $(ACR_LOGIN_SERVER)/myapp-api:latest \
+                -f backend/MyApp.Api/Dockerfile \
+                ./backend/MyApp.Api
+            displayName: Build Docker image
+
+          - script: |
+              docker push $(ACR_LOGIN_SERVER)/myapp-api:$(Build.BuildId)
+              docker push $(ACR_LOGIN_SERVER)/myapp-api:latest
+            displayName: Push to ACR
