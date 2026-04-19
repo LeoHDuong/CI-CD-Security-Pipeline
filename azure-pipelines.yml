@@ -164,8 +164,8 @@ stages:
     displayName: Build and Push Container
     dependsOn: DependencyScanning
     jobs:
-      - job: DockerBuildPush
-        displayName: Build and Push to ACR
+      - job: DockerBuildPushBackend
+        displayName: Build and Push Backend to ACR
         pool:
           name: local-agent
         steps:
@@ -183,9 +183,35 @@ stages:
                 -t $(ACR_LOGIN_SERVER)/myapp-api:latest \
                 -f backend/MyApp.Api/Dockerfile \
                 ./backend/MyApp.Api
-            displayName: Build Docker image
+            displayName: Build Backend Docker image
 
           - script: |
               docker push $(ACR_LOGIN_SERVER)/myapp-api:$(Build.BuildId)
               docker push $(ACR_LOGIN_SERVER)/myapp-api:latest
-            displayName: Push to ACR
+            displayName: Push Backend to ACR
+
+      - job: DockerBuildPushFrontend
+        displayName: Build and Push Frontend to ACR
+        pool:
+          name: local-agent
+        steps:
+          - checkout: self
+
+          - script: |
+              docker login $(ACR_LOGIN_SERVER) \
+                --username $(ACR_USERNAME) \
+                --password $(ACR_PASSWORD)
+            displayName: Login to ACR
+
+          - script: |
+              docker build \
+                -t $(ACR_LOGIN_SERVER)/myapp-frontend:$(Build.BuildId) \
+                -t $(ACR_LOGIN_SERVER)/myapp-frontend:latest \
+                -f frontend/Dockerfile \
+                ./frontend
+            displayName: Build Frontend Docker image
+
+          - script: |
+              docker push $(ACR_LOGIN_SERVER)/myapp-frontend:$(Build.BuildId)
+              docker push $(ACR_LOGIN_SERVER)/myapp-frontend:latest
+            displayName: Push Frontend to ACR
