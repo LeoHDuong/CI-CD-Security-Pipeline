@@ -215,3 +215,104 @@ stages:
               docker push $(ACR_LOGIN_SERVER)/myapp-frontend:$(Build.BuildId)
               docker push $(ACR_LOGIN_SERVER)/myapp-frontend:latest
             displayName: Push Frontend to ACR
+
+  - stage: ContainerScan
+    displayName: Container Image Vulnerability Scan
+    dependsOn: ContainerBuild
+    jobs:
+      - job: TrivyScanBackend
+        displayName: Trivy Scan – Backend Image
+        pool:
+          name: local-agent
+        steps:
+          - checkout: none
+
+          - script: |
+              docker login $(ACR_LOGIN_SERVER) \
+                --username $(ACR_USERNAME) \
+                --password $(ACR_PASSWORD)
+            displayName: Login to ACR
+
+          - script: |
+              docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v $(Agent.TempDirectory)/trivy-cache:/root/.cache/trivy \
+                ghcr.io/aquasecurity/trivy:latest \
+                image \
+                --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                --format table \
+                --output /dev/stdout \
+                $(ACR_LOGIN_SERVER)/myapp-api:$(Build.BuildId)
+            displayName: Scan Backend Image for Vulnerabilities
+            # exit-code 1 = pipeline fails if HIGH/CRITICAL CVEs found
+
+          - script: |
+              docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v $(Agent.TempDirectory)/trivy-cache:/root/.cache/trivy \
+                ghcr.io/aquasecurity/trivy:latest \
+                image \
+                --exit-code 0 \
+                --severity HIGH,CRITICAL \
+                --format json \
+                --output /dev/stdout \
+                $(ACR_LOGIN_SERVER)/myapp-api:$(Build.BuildId) \
+                > $(Build.ArtifactStagingDirectory)/trivy-backend.json || true
+            displayName: Export Backend Scan Report (JSON)
+            condition: always()
+
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Backend Trivy Report
+            condition: always()
+            inputs:
+              pathToPublish: $(Build.ArtifactStagingDirectory)/trivy-backend.json
+              artifactName: trivy-backend-report
+
+      - job: TrivyScanFrontend
+        displayName: Trivy Scan – Frontend Image
+        pool:
+          name: local-agent
+        steps:
+          - checkout: none
+
+          - script: |
+              docker login $(ACR_LOGIN_SERVER) \
+                --username $(ACR_USERNAME) \
+                --password $(ACR_PASSWORD)
+            displayName: Login to ACR
+
+          - script: |
+              docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v $(Agent.TempDirectory)/trivy-cache:/root/.cache/trivy \
+                ghcr.io/aquasecurity/trivy:latest \
+                image \
+                --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                --format table \
+                --output /dev/stdout \
+                $(ACR_LOGIN_SERVER)/myapp-frontend:$(Build.BuildId)
+            displayName: Scan Frontend Image for Vulnerabilities
+
+          - script: |
+              docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v $(Agent.TempDirectory)/trivy-cache:/root/.cache/trivy \
+                ghcr.io/aquasecurity/trivy:latest \
+                image \
+                --exit-code 0 \
+                --severity HIGH,CRITICAL \
+                --format json \
+                --output /dev/stdout \
+                $(ACR_LOGIN_SERVER)/myapp-frontend:$(Build.BuildId) \
+                > $(Build.ArtifactStagingDirectory)/trivy-frontend.json || true
+            displayName: Export Frontend Scan Report (JSON)
+            condition: always()
+
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Frontend Trivy Report
+            condition: always()
+            inputs:
+              pathToPublish: $(Build.ArtifactStagingDirectory)/trivy-frontend.json
+              artifactName: trivy-frontend-report
