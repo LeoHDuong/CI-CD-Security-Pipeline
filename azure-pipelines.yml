@@ -132,13 +132,28 @@ stages:
         steps:
           - checkout: self
 
-          - script: dotnet restore ./backend/MyApp.Api/MyApp.Api.csproj
+          - script: |
+              docker run --rm \
+                -v $(pwd):/app \
+                -w /app \
+                mcr.microsoft.com/dotnet/sdk:8.0 \
+                dotnet restore ./backend/MyApp.Api/MyApp.Api.csproj
             displayName: Restore dependencies
 
-          - script: dotnet build ./backend/MyApp.Api/MyApp.Api.csproj
+          - script: |
+              docker run --rm \
+                -v $(pwd):/app \
+                -w /app \
+                mcr.microsoft.com/dotnet/sdk:8.0 \
+                dotnet build ./backend/MyApp.Api/MyApp.Api.csproj --no-restore
             displayName: Build backend
 
-          - script: dotnet test ./backend/MyApp.Api/Tests/Tests.csproj
+          - script: |
+              docker run --rm \
+                -v $(pwd):/app \
+                -w /app \
+                mcr.microsoft.com/dotnet/sdk:8.0 \
+                dotnet test ./backend/MyApp.Api/Tests/Tests.csproj --no-build
             displayName: Run tests
 
   - stage: DependencyScanning
