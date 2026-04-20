@@ -134,8 +134,10 @@ stages:
 
           - script: |
               docker run --rm \
+                --user $(id -u):$(id -g) \
                 -v $(pwd):/app \
-                -v $(Agent.TempDirectory)/nuget-packages:/root/.nuget/packages \
+                -v $(Agent.TempDirectory)/nuget-packages:/tmp/nuget-packages \
+                -e NUGET_PACKAGES=/tmp/nuget-packages \
                 -w /app \
                 mcr.microsoft.com/dotnet/sdk:8.0 \
                 dotnet restore ./backend/MyApp.Api/MyApp.Api.csproj
@@ -143,8 +145,10 @@ stages:
 
           - script: |
               docker run --rm \
+                --user $(id -u):$(id -g) \
                 -v $(pwd):/app \
-                -v $(Agent.TempDirectory)/nuget-packages:/root/.nuget/packages \
+                -v $(Agent.TempDirectory)/nuget-packages:/tmp/nuget-packages \
+                -e NUGET_PACKAGES=/tmp/nuget-packages \
                 -w /app \
                 mcr.microsoft.com/dotnet/sdk:8.0 \
                 dotnet build ./backend/MyApp.Api/MyApp.Api.csproj --no-restore
@@ -152,8 +156,10 @@ stages:
 
           - script: |
               docker run --rm \
+                --user $(id -u):$(id -g) \
                 -v $(pwd):/app \
-                -v $(Agent.TempDirectory)/nuget-packages:/root/.nuget/packages \
+                -v $(Agent.TempDirectory)/nuget-packages:/tmp/nuget-packages \
+                -e NUGET_PACKAGES=/tmp/nuget-packages \
                 -w /app \
                 mcr.microsoft.com/dotnet/sdk:8.0 \
                 dotnet test ./backend/MyApp.Api/Tests/Tests.csproj --no-build
