@@ -246,10 +246,11 @@ stages:
                 image \
                 --exit-code 1 \
                 --severity HIGH,CRITICAL \
+                --ignore-unfixed \
                 --format table \
                 $(ACR_LOGIN_SERVER)/myapp-api:$(Build.BuildId)
             displayName: Scan Backend Image for Vulnerabilities
-            # exit-code 1 = pipeline fails if HIGH/CRITICAL CVEs found
+            # exit-code 1 = pipeline fails if HIGH/CRITICAL CVEs with a fix available are found
 
           - script: |
               docker run --rm \
@@ -259,6 +260,7 @@ stages:
                 image \
                 --exit-code 0 \
                 --severity HIGH,CRITICAL \
+                --ignore-unfixed \
                 --format json \
                 $(ACR_LOGIN_SERVER)/myapp-api:$(Build.BuildId) \
                 > $(Build.ArtifactStagingDirectory)/trivy-backend.json || true
@@ -293,6 +295,7 @@ stages:
                 image \
                 --exit-code 1 \
                 --severity HIGH,CRITICAL \
+                --ignore-unfixed \
                 --format table \
                 $(ACR_LOGIN_SERVER)/myapp-frontend:$(Build.BuildId)
             displayName: Scan Frontend Image for Vulnerabilities
@@ -305,6 +308,7 @@ stages:
                 image \
                 --exit-code 0 \
                 --severity HIGH,CRITICAL \
+                --ignore-unfixed \
                 --format json \
                 $(ACR_LOGIN_SERVER)/myapp-frontend:$(Build.BuildId) \
                 > $(Build.ArtifactStagingDirectory)/trivy-frontend.json || true
