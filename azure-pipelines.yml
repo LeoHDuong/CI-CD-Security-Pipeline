@@ -321,3 +321,37 @@ stages:
             inputs:
               pathToPublish: $(Build.ArtifactStagingDirectory)/trivy-frontend.json
               artifactName: trivy-frontend-report
+
+  - stage: IaCScan
+    displayName: "IaC Security Scan (Checkov)"
+    dependsOn: []          # runs independently, no need to wait for build stages
+    jobs:
+      - job: CheckovScan
+        displayName: "Checkov — Terraform"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - script: pip install checkov
+            displayName: "Install Checkov"
+
+          - script: |
+              checkov \
+                --directory infra/ \
+                --config-file infra/.checkov.yml \
+                --output cli \
+                --output junitxml \
+                --output-file-path . \
+                --soft-fail
+            displayName: "Run Checkov scan"
+            workingDirectory: $(Build.SourcesDirectory)
+
+          - task: PublishTestResults@2
+            displayName: "Publish Checkov results"
+            condition: always()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: "results_junitxml.xml"
+              testRunTitle: "Checkov IaC Scan"
+              failTaskOnFailedTests: true

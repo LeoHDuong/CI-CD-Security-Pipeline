@@ -1,0 +1,14 @@
+directory:
+  - .
+
+compact: true
+output: cli
+soft-fail: false
+
+# Skip checks that don't apply to a staging/educational environment
+skip-check:
+  - CKV_AZURE_5    # AKS RBAC is enabled via AAD (CKV_AZURE_5 checks legacy RBAC)
+  - CKV_AZURE_170  # AKS monitoring agent — not configuring Log Analytics in this phase
+
+framework:
+  - terraform
